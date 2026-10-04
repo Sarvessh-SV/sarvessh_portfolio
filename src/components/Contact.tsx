@@ -20,7 +20,7 @@ const contactSchema = z.object({
 type ContactFormData = z.infer<typeof contactSchema>;
 
 export default function Contact() {
-  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'fallback'>('idle');
+  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
 
   const {
@@ -28,7 +28,7 @@ export default function Contact() {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors, isSubmitting }
+    formState: { errors }
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -55,7 +55,8 @@ export default function Contact() {
 
   const onSubmit = async (data: ContactFormData) => {
     setFormStatus('loading');
-    
+    setStatusMessage('');
+
     try {
       // Call local backend API route
       const response = await fetch('/api/contact', {
@@ -68,24 +69,22 @@ export default function Contact() {
 
       if (response.ok && resData.success) {
         setFormStatus('success');
-        setStatusMessage('Thank you! Your project inquiry has been recorded successfully. I will get back to you shortly.');
-        reset();
+        setStatusMessage(resData.message || 'Thank you! Your project inquiry has been sent successfully. I will respond to your email shortly.');
+        reset(); // Clear input fields only after confirmed successful delivery
       } else {
-        // Honest fallback handling when backend email API is in preview / mock mode
-        setFormStatus('fallback');
-        setStatusMessage(resData.message || 'Inquiry registered in preview mode. You can also email me directly at sarvesshsvsh@gmail.com.');
+        setFormStatus('error');
+        setStatusMessage(resData.message || 'Failed to send project inquiry. Please try again or reach out directly via email.');
       }
     } catch (err) {
-      // Network fallback
-      setFormStatus('fallback');
-      setStatusMessage('Direct email preview: Please reach out at sarvesshsvsh@gmail.com or via phone at +91 9363978132.');
+      setFormStatus('error');
+      setStatusMessage('Network connection error. Unable to reach the server. Please check your connection and try again.');
     }
   };
 
   return (
     <section id="contact" className="py-20 sm:py-28 bg-white border-t border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
@@ -100,13 +99,13 @@ export default function Contact() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
+
           {/* Left Info Column */}
           <div className="lg:col-span-5 space-y-8">
-            
+
             <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-xl space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl" />
-              
+
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-amber-400 text-xs font-mono">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Freelance Project Inquiries</span>
@@ -122,7 +121,7 @@ export default function Contact() {
 
               {/* Direct Details */}
               <div className="space-y-4 pt-4 border-t border-slate-800">
-                <a 
+                <a
                   href={`mailto:${siteConfig.personal.email}`}
                   className="flex items-center gap-3.5 text-xs sm:text-sm text-slate-200 hover:text-amber-400 transition-colors group"
                 >
@@ -145,7 +144,7 @@ export default function Contact() {
                   </div>
                 </div>
 
-                <a 
+                <a
                   href={`tel:${siteConfig.personal.phone}`}
                   className="flex items-center gap-3.5 text-xs sm:text-sm text-slate-200 hover:text-amber-400 transition-colors group"
                 >
@@ -175,12 +174,12 @@ export default function Contact() {
 
           {/* Right Form Column */}
           <div className="lg:col-span-7 bg-slate-50/70 rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-md">
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-              
+
               {/* Name & Email Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                
+
                 {/* Name */}
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -192,8 +191,8 @@ export default function Contact() {
                     placeholder="e.g. Rahul Sharma"
                     {...register('name')}
                     className={`w-full px-4 py-3 rounded-xl bg-white border text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all ${
-                      errors.name 
-                        ? 'border-rose-300 focus:ring-rose-500' 
+                      errors.name
+                        ? 'border-rose-300 focus:ring-rose-500'
                         : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/20'
                     }`}
                   />
@@ -215,8 +214,8 @@ export default function Contact() {
                     placeholder="name@company.com"
                     {...register('email')}
                     className={`w-full px-4 py-3 rounded-xl bg-white border text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all ${
-                      errors.email 
-                        ? 'border-rose-300 focus:ring-rose-500' 
+                      errors.email
+                        ? 'border-rose-300 focus:ring-rose-500'
                         : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/20'
                     }`}
                   />
@@ -231,7 +230,7 @@ export default function Contact() {
 
               {/* Category & Budget Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                
+
                 {/* Category */}
                 <div className="space-y-1.5">
                   <label htmlFor="category" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -285,8 +284,8 @@ export default function Contact() {
                   placeholder="Tell me about your website goals, features needed, target audience, or timeline..."
                   {...register('description')}
                   className={`w-full px-4 py-3 rounded-xl bg-white border text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all ${
-                    errors.description 
-                      ? 'border-rose-300 focus:ring-rose-500' 
+                    errors.description
+                      ? 'border-rose-300 focus:ring-rose-500'
                       : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/20'
                   }`}
                 />
@@ -306,7 +305,7 @@ export default function Contact() {
                 {formStatus === 'loading' ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>Processing Inquiry...</span>
+                    <span>Processing & Sending Email...</span>
                   </>
                 ) : (
                   <>
@@ -321,18 +320,18 @@ export default function Contact() {
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Inquiry Sent Successfully!</span>
+                    <span className="font-bold">Inquiry Delivered Successfully!</span>
                     <p className="text-[11px] text-emerald-800 mt-0.5">{statusMessage}</p>
                   </div>
                 </div>
               )}
 
-              {formStatus === 'fallback' && (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              {formStatus === 'error' && (
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-950 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Inquiry Registered</span>
-                    <p className="text-[11px] text-amber-900 mt-0.5">{statusMessage}</p>
+                    <span className="font-bold text-rose-900">Delivery Error</span>
+                    <p className="text-[11px] text-rose-800 mt-0.5">{statusMessage}</p>
                   </div>
                 </div>
               )}
